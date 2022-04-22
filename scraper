@@ -1,0 +1,41 @@
+import requests
+from bs4 import BeautifulSoup as bs
+import pandas as pd
+
+class Player:
+
+    def __init__(self,rookie_year,last_year,url,df_title,csv_name):
+        self.rookie_year = rookie_year
+        self.last_year = last_year
+        self.url = url
+        self.df_title = df_title
+        self.csv_name = csv_name
+
+        player_data = []
+        for year in range(rookie_year,last_year):
+            urll= url + str(year)
+            r = requests.get(urll)
+            soup = bs(r.content,features="html.parser")
+            #Grab Table
+            table = soup.find("div",attrs={"id":"all_pgl_basic"})
+            #select columns
+            columns = table.find("thead").find_all("th")
+            column_names = [name.string for name in columns]
+            column_namesdrop = column_names[1:]
+            #select tbodyrows
+            table_rows = table.find("tbody").find_all("tr")
+            l = []
+            for tr in table_rows:
+                td = tr.find_all("td",attrs=["right","left","center","right","center iz","right iz"])
+                row = [str(tr.get_text()).strip() for tr in td]
+                l.append(row)
+            #Putting it all together
+            pd.set_option('display.max_rows', None)
+            df_title = pd.DataFrame(l,columns=column_namesdrop)
+            player_data.append(pd.DataFrame(df_title).drop(0, axis=0))
+
+        data = pd.concat(player_data)
+        data.to_csv(csv_name)
+#Add one year to the rookie and last year when using class.
+Lebron = Player(2004,2023,"https://www.basketball-reference.com/players/j/jamesle01/gamelog/","dflebron","lebron_test_csv.csv")
+Kobe = Player(1997,2017,"https://www.basketball-reference.com/players/b/bryanko01/gamelog/","dfKobe","Kobe_test_csv.csv")
